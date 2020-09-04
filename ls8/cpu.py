@@ -7,7 +7,15 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+        self.pc = 0
+
+    def ram_read(self, mar):
+        return self.ram[mar]
+
+    def ram_write(self, mdr, mar):
+        self.ram[mar] = mdr
 
     def load(self):
         """Load a program into memory."""
@@ -62,4 +70,28 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+
+        while running:
+            ir = self.ram[self.pc]
+            #LDI Instruction Handler
+            if ir == 130:
+                #Register num
+                operand_a = self.ram_read(self.pc + 1)
+                #Constant Value
+                operand_b = self.ram_read(self.pc + 2)
+                self.reg[operand_a] = operand_b
+                #increase pc by 3 (opcode and two operands)
+                self.pc += 3
+            #PRN Instruction Handler
+            elif ir == 71:
+                operand_a = self.ram_read(self.pc + 1)
+                value = self.reg[operand_a]
+                print(value)
+                self.pc += 2
+            #HLT Instruction Handler
+            elif ir == 1:
+                running = False
+
+
+            
