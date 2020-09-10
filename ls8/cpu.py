@@ -11,34 +11,28 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
 
-
-
     def ram_read(self, mar):
         return self.ram[mar]
 
     def ram_write(self, mdr, mar):
         self.ram[mar] = mdr
 
-    def load(self):
+    def load(self, prog_name):
         """Load a program into memory."""
-
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        try:
+            with open(f'ls8/examples/{prog_name}') as f:
+                for line in f:
+                    split_line = line.split(' ')
+                    code_value = split_line[0].strip()
+                    if code_value == '' or code_value == '#':
+                        continue
+                    num = int(code_value, 2)
+                    self.ram[address] = num
+                    address += 1
+        except FileNotFoundError:
+            print(f'{prog_name} file not found')
+            sys.exit(2)
 
 
     def alu(self, op, reg_a, reg_b):
@@ -47,6 +41,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #elif op == "SUB": etc
+        if op == "MULT":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -76,24 +72,31 @@ class CPU:
 
         while running:
             ir = self.ram[self.pc]
-            #LDI Instruction Handler
-            if ir == 130:
+            # #LDI Instruction Handler
+            if ir == 0b10000010:
                 #Register num
                 operand_a = self.ram_read(self.pc + 1)
                 #Constant Value
                 operand_b = self.ram_read(self.pc + 2)
                 self.reg[operand_a] = operand_b
                 #increase pc by 3 (opcode and two operands)
-                self.pc += 3
-            #PRN Instruction Handler
-            elif ir == 71:
+            # #PRN Instruction Handler
+            elif ir == 0b01000111:
                 operand_a = self.ram_read(self.pc + 1)
                 value = self.reg[operand_a]
                 print(value)
-                self.pc += 2
+            #MULT Instruction Handler
+            elif ir == 0b10100010:
+                reg_a = self.ram[self.pc + 1]
+                reg_b = self.ram[self.pc + 2]
+                self.alu("MULT", reg_a, reg_b)
             #HLT Instruction Handler
             elif ir == 1:
                 running = False
+            num_operands = ir >> 6
+            increment = num_operands + 1
+            self.pc += increment
+           
 
 
             
