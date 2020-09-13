@@ -40,9 +40,10 @@ class CPU:
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
+            added_value = self.reg[reg_b]
+            self.reg[reg_a] += added_value
         #elif op == "SUB": etc
-        if op == "MULT":
+        elif op == "MULT":
             self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
@@ -81,16 +82,25 @@ class CPU:
                 operand_b = self.ram_read(self.pc + 2)
                 self.reg[operand_a] = operand_b
                 #increase pc by 3 (opcode and two operands)
+                self.pc += 3
             # #PRN Instruction Handler
             elif ir == 0b01000111:
                 operand_a = self.ram_read(self.pc + 1)
                 value = self.reg[operand_a]
                 print(value)
+                self.pc += 2
             #MULT Instruction Handler
             elif ir == 0b10100010:
                 reg_a = self.ram[self.pc + 1]
                 reg_b = self.ram[self.pc + 2]
                 self.alu("MULT", reg_a, reg_b)
+                self.pc += 3
+            #MULT2Print Instruction Handler
+            elif ir == 0b10100000:
+                reg_a = self.ram[self.pc + 1]
+                reg_b = self.ram[self.pc + 2]
+                self.alu("ADD", reg_a, reg_b)
+                self.pc += 3
             #PUSH Instruction Handler
             elif ir == 0b01000101:
                 #decrement the stack pointer
@@ -102,6 +112,7 @@ class CPU:
                 #Store at top of stack
                 top_of_stack_addr = self.reg[7]
                 self.ram[top_of_stack_addr] = value
+                self.pc += 2
             #POP INSTRUCTION Handler
             elif ir == 0b01000110:
                 #find stop of stack and copy value
@@ -112,13 +123,27 @@ class CPU:
                 self.reg[reg_num] = value
                 #increment stack pointer
                 self.reg[7] += 1
+                self.pc += 2
+            #CALL Instruction Handler
+            elif ir == 0b01010000:
+                #save return address to Stack
+                ret_addr = self.pc + 2
+                self.reg[7] -= 1
+                self.ram[self.reg[7]] = ret_addr
+
+                # Call the subroutine
+                reg_num = self.ram[self.pc + 1]
+                self.pc = self.reg[reg_num]
+            #RET Instruction Handler
+            elif ir == 0b00010001:
+                top_stack = self.reg[7]
+                ret_address = self.ram[top_stack]
+                self.reg[7] += 1
+                self.pc = ret_addr
             #HLT Instruction Handler
             elif ir == 1:
                 running = False
 
-            num_operands = ir >> 6
-            increment = num_operands + 1
-            self.pc += increment
            
 
 
